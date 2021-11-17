@@ -1,0 +1,87 @@
+﻿@page "/katakana"
+
+@using HiraganaKatakanaApp.Data
+@inject IJSRuntime js;
+@inject CharacterService HiraganaService
+
+<h3>Katakana</h3>
+
+@if (characters != null)
+{
+    <div class="center">
+        <p role="status" class="character">@characters[random].katakana</p>
+    
+        <a @onclick="PlayAudio" style="cursor: pointer">
+		    Escutar <span class="oi oi-audio" aria-hidden="true"></span>
+        </a>
+
+        <audio id="player">
+            <source id="playerSource" src="" />
+        </audio>
+
+        <br /><br />
+
+        <input type="text" name="textInput" @bind-value="@textInput" autocomplete="off" @onkeyup="EnterProximo" />
+
+        <br /><br />
+    
+        <button class="btn btn-primary" @onclick="Proximo">Próximo</button>
+        <button class="btn btn-warning" @onclick="GetRandom">Pular</button>
+
+        <br /><br />
+
+        <p role="status">Acertos: @acertos | Erros: @erros</p>
+    </div>
+}
+
+@code {
+    private int random;
+    private string textInput;
+    private int acertos = 0;
+    private int erros = 0;
+    private List<Character> characters;
+
+    protected override async Task OnInitializedAsync()
+    {
+        characters = CharacterService.GetHiragana();
+        GetRandom();
+    }
+
+    private void EnterProximo(KeyboardEventArgs e)
+    {
+        if (e.Code == "Enter")
+            Proximo();
+    }
+
+    private void Proximo()
+    {
+        if (!String.IsNullOrEmpty(textInput))
+        {
+            if (textInput.ToString().Trim().ToLower().Equals(characters[random].value.ToString().ToLower()))
+                acertos++;
+            else
+                erros++;
+
+            textInput = "";
+            GetRandom();            
+        }
+    }
+
+    private void GetRandom()
+    {
+        var aux = new Random().Next(0, characters.Count);
+
+        if (aux == random)
+        {
+            GetRandom();
+            return;
+        }
+
+        random = aux;
+    }
+
+    private void PlayAudio()
+    {
+        js.InvokeVoidAsync("PlayAudioFile", $"/audio/{characters[random].value}.mp3");
+    }
+}
